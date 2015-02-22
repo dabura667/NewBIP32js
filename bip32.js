@@ -331,7 +331,6 @@ BIP32.prototype.derive_child = function(idx) {
         ib.push( (idx >>  8) & 0xff );
         ib.push( idx & 0xff );
     };
-    console.log( ib );
 
     var ecparams = getSECCurveByName("secp256k1");
 
