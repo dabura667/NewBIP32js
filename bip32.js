@@ -423,7 +423,6 @@ BIP32.prototype.derive_child = function(idx) {
     } else {
         ret.child_index = idx;
     }
-    // fingerprint is 2 bytes from the head of each pubkeyhash.
     ret.parent_fingerprint = this.eckey.pubKeyHash.slice(0,4);
     ret.version = this.version;
     ret.depth   = this.depth + 1;
