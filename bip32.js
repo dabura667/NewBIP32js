@@ -99,6 +99,7 @@ BIP32.prototype.init_from_bytes = function(bytes) {
         this.eckey.pubKeyHash = Bitcoin.Util.sha256ripe160(this.eckey.pub.getEncoded(true));
         
         this.has_private_key = true;
+        this.is_node = true;
     } else if( is_public && (akey_bytes[0] == 0x02 || akey_bytes[0] == 0x03) && (bkey_bytes[0] == 0x02 || bkey_bytes[0] == 0x03) ) {
         this.aeckey = new Bitcoin.ECKey();
         this.beckey = new Bitcoin.ECKey();
@@ -117,6 +118,7 @@ BIP32.prototype.init_from_bytes = function(bytes) {
         this.eckey.setCompressed(true);
 
         this.has_private_key = false;
+        this.is_node = true;
     } else {
         throw new Error("Invalid key");
     }
@@ -201,6 +203,7 @@ BIP32.prototype.build_extended_public_key = function() {
 }
 
 BIP32.prototype.extended_public_key_string = function(format) {
+    if( !this.is_node ) throw new Error("Not a node.");
     if( format === undefined || format === "base58" ) {
         var hash = Crypto.SHA256( Crypto.SHA256( this.extended_public_key, { asBytes: true } ), { asBytes: true } );
         var checksum = hash.slice(0, 4);
@@ -258,6 +261,7 @@ BIP32.prototype.build_extended_private_key = function() {
 }
 
 BIP32.prototype.extended_private_key_string = function(format) {
+    if( !this.is_node ) throw new Error("Not a node.");
     if( format === undefined || format === "base58" ) {
         var hash = Crypto.SHA256( Crypto.SHA256( this.extended_private_key, { asBytes: true } ), { asBytes: true } );
         var checksum = hash.slice(0, 4);
@@ -331,6 +335,7 @@ BIP32.prototype.derive_child = function(idx) {
         ib.push( (idx >>  8) & 0xff );
         ib.push( idx & 0xff );
     };
+    console.log( ib );
 
     var ecparams = getSECCurveByName("secp256k1");
 
@@ -417,12 +422,19 @@ BIP32.prototype.derive_child = function(idx) {
         ret.has_private_key = false;
     }
 
+    if (idx == 'n') {
+        ret.is_node = true;
+    } else {
+        ret.is_node = false;
+    };
+
     // Make sure the child index stays the same if deriving a node or key.
     if (idx == 'n' || idx == 'k') {
         ret.child_index = this.child_index
     } else {
         ret.child_index = idx;
     }
+    // fingerprint is 2 bytes from the head of each pubkeyhash.
     ret.parent_fingerprint = this.eckey.pubKeyHash.slice(0,4);
     ret.version = this.version;
     ret.depth   = this.depth + 1;
