@@ -376,12 +376,13 @@ BIP32.prototype.derive_child = function(idx) {
         var curve = ecparams.getCurve();
         var ak = ail.multiply(this.aeckey.priv).mod(ecparams.getN());
         var bk = bil.multiply(this.beckey.priv).mod(ecparams.getN());
+        var xk = ak.add(bk).mod(ecparams.getN());
 
         ret = new BIP32();
         ret.chain_code  = ir;
 
-        ret.aeckey = new Bitcoin.ECKey(ak.toByteArrayUnsigned());
-        ret.beckey = new Bitcoin.ECKey(bk.toByteArrayUnsigned());
+        ret.aeckey = new Bitcoin.ECKey(ak.add(xk).mod(ecparams.getN()).toByteArrayUnsigned());
+        ret.beckey = new Bitcoin.ECKey(bk.add(xk).mod(ecparams.getN()).toByteArrayUnsigned());
         ret.eckey = new Bitcoin.ECKey(ret.aeckey.priv.add(ret.beckey.priv).mod(ecparams.getN()));
         ret.aeckey.pub = ret.aeckey.getPubPoint();
         ret.beckey.pub = ret.beckey.getPubPoint();
@@ -408,6 +409,7 @@ BIP32.prototype.derive_child = function(idx) {
         // Ki = (IL + kpar)*G = IL*G + Kpar
         var ak = this.aeckey.pub.multiply(ail);
         var bk = this.beckey.pub.multiply(bil);
+        var xk = ak.add(bk);
 
         ret = new BIP32();
         ret.chain_code  = ir;
@@ -416,9 +418,9 @@ BIP32.prototype.derive_child = function(idx) {
         ret.beckey = new Bitcoin.ECKey();
         ret.eckey = new Bitcoin.ECKey();
 
-        ret.aeckey.pub = ak;
-        ret.beckey.pub = bk;
-        ret.eckey.pub = ak.add(bk);
+        ret.aeckey.pub = ak.add(xk);
+        ret.beckey.pub = bk.add(xk);
+        ret.eckey.pub = ret.aeckey.pub.add(ret.beckey.pub);
         ret.has_private_key = false;
     }
 
@@ -496,4 +498,3 @@ function decompress_pubkey(key_bytes) {
     
     return new ECPointFp(curve, curve.fromBigInteger(x), curve.fromBigInteger(y));
 }
-
